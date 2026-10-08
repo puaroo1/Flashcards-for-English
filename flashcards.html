@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Flashcards</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: #333;
+  }
+  .app {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 700px;
+    padding: 30px;
+  }
+  h1 {
+    text-align: center;
+    color: #4a3f8f;
+    margin-bottom: 20px;
+    font-size: 24px;
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+  }
+  .tab {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    color: #888;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+  }
+  .tab.active { color: #667eea; border-bottom-color: #667eea; }
+  .tab:hover { color: #667eea; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  textarea {
+    width: 100%;
+    min-height: 280px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    transition: border 0.2s;
+  }
+  textarea:focus { border-color: #667eea; }
+  .hint {
+    color: #888;
+    font-size: 13px;
+    margin: 10px 0;
+    line-height: 1.6;
+  }
+  .hint code {
+    background: #f0f0f5;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #667eea;
+    color: #fff;
+  }
+  .btn:hover { background: #5568d3; transform: translateY(-1px); }
+  .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+  .btn.secondary { background: #f0f0f0; color: #555; }
+  .btn.secondary:hover { background: #e0e0e0; }
+  .btn.success { background: #4caf50; }
+  .btn.success:hover { background: #43a047; }
+  .btn.peek { background: #ff9800; }
+  .btn.peek:hover { background: #fb8c00; }
+  .btn.peek:disabled { background: #ccc; }
+  .row { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+  .card-container {
+    perspective: 1000px;
+    margin: 20px 0;
+  }
+  .card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    position: relative;
+  }
+  .card .word {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    word-break: break-word;
+  }
+  .card .prompt {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+  .card .answer {
+    font-size: 26px;
+    font-weight: 600;
+    color: #ffe082;
+    margin-top: 10px;
+  }
+  .card .peek-timer {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    font-size: 42px;
+    font-weight: 800;
+    color: #fff;
+    background: rgba(255, 60, 60, 0.85);
+    padding: 4px 18px;
+    border-radius: 16px;
+    line-height: 1;
+    box-shadow: 0 4px 15px rgba(255, 60, 60, 0.5);
+    letter-spacing: -1px;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  .unit-selector {
+    background: #f8f8fc;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  .unit-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .unit-selector-title {
+    font-weight: 700;
+    color: #4a3f8f;
+    font-size: 14px;
+  }
+  .unit-hint {
+    font-size: 12px;
+    color: #667eea;
+    font-weight: 600;
+    background: #e8ecff;
+    padding: 4px 10px;
+    border-radius: 8px;
+  }
+  .unit-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .unit-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    background: #fff;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .unit-item:hover { border-color: #667eea; }
+  .unit-item.selected {
+    border-color: #667eea;
+    background: #f0f2ff;
+    color: #4a3f8f;
+  }
+  .unit-item input { display: none; }
+  .unit-item .count {
+    font-size: 12px;
+    color: #999;
+    font-weight: 500;
+  }
+  .unit-item.selected .count { color: #667eea; }
+  .word-counter {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 12px;
+    padding: 8px 16px;
+    background: #f0f2ff;
+    border-radius: 10px;
+  }
+  .word-counter b { color: #4a3f8f; font-size: 16px; }
+  input[type="text"] {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 18px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    outline: none;
+    transition: border 0.2s;
+    text-align: center;
+  }
+  input[type="text"]:focus { border-color: #667eea; }
+  input.correct { border-color: #4caf50; background: #e8f5e9; }
+  input.wrong { border-color: #f44336; background: #ffebee; }
+  input:disabled { cursor: default; opacity: 1; }
+  .feedback {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    min-height: 24px;
+    margin-top: 10px;
+  }
+  .feedback.ok { color: #4caf50; }
+  .feedback.no { color: #f44336; }
+  .feedback.hint { color: #ff9800; }
+  .stats {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f8fc;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+  .stats div { text-align: center; }
+  .stats .num {
+    display: block;
+    font-size: 22px;
+    font-weight: 700;
+    color: #667eea;
+  }
+  .stats .num.red { color: #f44336; }
+  .stats .num.green { color: #4caf50; }
+  .progress-bar {
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .progress-bar > div {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width 0.3s;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+  }
+  .empty-state p { margin-bottom: 15px; }
+  .mode-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+  .mode-selector label {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    min-width: 100px;
+  }
+  .mode-selector input { display: none; }
+  .mode-selector input:checked + span { color: #667eea; }
+  .mode-selector label:has(input:checked) {
+    border-color: #667eea;
+    background: #f0f2ff;
+  }
+  .result-screen {
+    text-align: center;
+    padding: 20px;
+  }
+  .result-screen .emoji {
+    font-size: 60px;
+    margin-bottom: 15px;
+  }
+  .result-screen h2 {
+    color: #4a3f8f;
+    font-size: 26px;
+    margin-bottom: 25px;
+  }
+  .result-score {
+    font-size: 56px;
+    font-weight: 800;
+    margin: 10px 0 5px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .result-score-label {
+    color: #888;
+    font-size: 15px;
+    margin-bottom: 25px;
+  }
+  .result-details {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+  .result-details div { text-align: center; }
+  .result-details .n {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .result-details .n.green { color: #4caf50; }
+  .result-details .n.red { color: #f44336; }
+  .result-details .lbl {
+    color: #888;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>📚 English Flashcards</h1>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="study">Тренировка</button>
+    <button class="tab" data-tab="edit">Список слов</button>
+  </div>
+
+  <div class="panel active" id="panel-study">
+    <div id="studyEmpty" class="empty-state" style="display:none;">
+      <p>Список слов пуст.</p>
+      <button class="btn" onclick="switchTab('edit')">Добавить слова</button>
+    </div>
+
+    <div id="studyContent">
+      <div id="resultScreen" class="result-screen" style="display:none;">
+        <div class="emoji" id="resultEmoji">🎉</div>
+        <h2 id="resultTitle">Тест завершён!</h2>
+        <div class="result-score" id="resultScore">100%</div>
+        <div class="result-score-label">Ваш результат</div>
+        <div class="result-details">
+          <div>
+            <span class="n green" id="resultCorrect">0</span>
+            <span class="lbl">Верно</span>
+          </div>
+          <div>
+            <span class="n red" id="resultWrong">0</span>
+            <span class="lbl">Ошибок</span>
+          </div>
+          <div>
+            <span class="n" id="resultWords">20</span>
+            <span class="lbl">Слов</span>
+          </div>
+        </div>
+        <button class="btn" id="retryBtn">Пройти заново</button>
+      </div>
+
+      <div id="trainScreen">
+        <div class="unit-selector" id="unitSelector">
+          <div class="unit-selector-header">
+            <span class="unit-selector-title">📖 Выберите юниты</span>
+            <span class="unit-hint" id="unitHint">1 юнит → 10 слов</span>
+          </div>
+          <div class="unit-list" id="unitList"></div>
+        </div>
+
+        <div class="mode-selector">
+          <label><input type="radio" name="mode" value="en-ru" checked><span>EN → RU</span></label>
+          <label><input type="radio" name="mode" value="ru-en"><span>RU → EN</span></label>
+          <label><input type="radio" name="mode" value="mix"><span>Микс</span></label>
+        </div>
+
+        <div class="row" style="margin-top:0; margin-bottom:15px;">
+          <button class="btn" id="startTestBtn" style="flex:1;">▶ Начать тест</button>
+        </div>
+
+        <div class="word-counter">
+          Слово <b id="currentNum">1</b> из <b id="totalNum">20</b>
+        </div>
+
+        <div class="card-container">
+          <div class="card">
+            <div class="peek-timer" id="peekTimer" style="display:none;">5</div>
+            <div class="word" id="cardWord">—</div>
+            <div class="prompt" id="cardPrompt">Нажмите «Начать тест»</div>
+            <div class="answer" id="cardAnswer" style="display:none;"></div>
+          </div>
+        </div>
+
+        <input type="text" id="answerInput" placeholder="Ваш ответ..." autocomplete="off" autocapitalize="off" spellcheck="false" disabled>
+        <div class="feedback" id="feedback"></div>
+
+        <div class="row">
+          <button class="btn" id="checkBtn" disabled>Проверить (Enter)</button>
+          <button class="btn peek" id="peekBtn" disabled>👀 Подсмотреть (5 с)</button>
+          <button class="btn secondary" id="restartBtn">Сбросить</button>
+        </div>
+
+        <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
+
+        <div class="stats">
+          <div><span class="num" id="statTotal">0</span>Слов</div>
+          <div><span class="num green" id="statCorrect">0</span>Верно</div>
+          <div><span class="num red" id="statWrong">0</span>Ошибок</div>
+          <div><span class="num" id="statPercent">100%</span>Балл</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-edit">
+    <p class="hint">
+      Каждая строка — одна пара: <b>слово = перевод</b><br>
+      Разделители: <code>=</code>, <code>;</code>, <code>,</code> или <code>—</code><br>
+      <b>Юниты</b> задаются строкой с решёткой: <code># Unit 1</code><br>
+      Слова до первого юнита попадут в раздел <i>«Без юнита»</i>.
+    </p>
+    <textarea id="wordList" placeholder="# Unit 1&#10;apple = яблоко&#10;house = дом&#10;&#10;# Unit 2&#10;car = машина&#10;city = город"></textarea>
+    <div class="row">
+      <button class="btn success" id="saveBtn">Сохранить</button>
+      <button class="btn secondary" id="loadDemoBtn">Загрузить пример</button>
+      <button class="btn secondary" id="exportBtn">📥 Скачать .txt</button>
+      <button class="btn secondary" id="importBtn">📤 Загрузить .txt</button>
+      <button class="btn secondary" id="clearBtn">Очистить</button>
+    </div>
+    <input type="file" id="fileInput" accept=".txt,text/plain" style="display:none;">
+    <div class="feedback" id="saveFeedback"></div>
+  </div>
+</div>
+<script>
+const STORAGE_KEY = 'flashcards_data_v2';
+const PENALTY_PER_WRONG = 5;
+const PENALTY_PER_PEEK = 5;
+
+let units = [];
+let selectedUnits = new Set();
+let testWords = [];
+let currentIndex = 0;
+let current = null;
+let correctCount = 0;
+let wrongCount = 0;
+let peekCount = 0;
+let answeredCorrectly = false;
+let testActive = false;
+
+let peekTimeout = null;
+let peekInterval = null;
+
+const $ = id => document.getElementById(id);
+
+function parseUnits(text) {
+  const result = [];
+  let currentUnit = null;
+  const lines = text.split('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('#')) {
+      const name = line.replace(/^#+\s*/, '').trim() || 'Без названия';
+      currentUnit = { name, words: [] };
+      result.push(currentUnit);
+      continue;
+    }
+    let parts = line.split(/\s*[=;—–\t]\s*/);
+    if (parts.length < 2) parts = line.split(/\s*,\s*/);
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      const word = { en: parts[0].trim(), ru: parts.slice(1).join(', ').trim() };
+      if (!currentUnit) {
+        currentUnit = { name: 'Без юнита', words: [] };
+        result.push(currentUnit);
+      }
+      currentUnit.words.push(word);
+    }
+  }
+  return result.filter(u => u.words.length > 0);
+}
+
+function saveUnits() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(units));
+}
+
+function loadUnits() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) units = JSON.parse(raw) || [];
+  } catch (e) { units = []; }
+}
+
+function unitsToText() {
+  return units.map(u => {
+    const header = '# ' + u.name;
+    const words = u.words.map(w => w.en + ' = ' + w.ru).join('\n');
+    return header + '\n' + words;
+  }).join('\n\n');
+}
+
+function getAllWords() {
+  return units.flatMap(u => u.words);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  $('panel-' + name).classList.add('active');
+  if (name === 'study') refreshStudy();
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+function renderUnitList() {
+  const container = $('unitList');
+  container.innerHTML = '';
+  if (units.length === 0) {
+    container.innerHTML = '<span style="color:#999;font-size:13px;">Нет юнитов — добавьте слова</span>';
+    updateUnitHint();
+    return;
+  }
+  units.forEach(unit => {
+    const label = document.createElement('label');
+    label.className = 'unit-item' + (selectedUnits.has(unit.name) ? ' selected' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = selectedUnits.has(unit.name);
+    cb.addEventListener('change', () => {
+      if (cb.checked) selectedUnits.add(unit.name);
+      else selectedUnits.delete(unit.name);
+      label.classList.toggle('selected', cb.checked);
+      updateUnitHint();
+    });
+    label.appendChild(cb);
+    const txt = document.createElement('span');
+    txt.textContent = unit.name;
+    label.appendChild(txt);
+    const cnt = document.createElement('span');
+    cnt.className = 'count';
+    cnt.textContent = '(' + unit.words.length + ')';
+    label.appendChild(cnt);
+    container.appendChild(label);
+  });
+  updateUnitHint();
+}
+
+function updateUnitHint() {
+  const n = selectedUnits.size;
+  const total = units.length;
+  let label;
+  if (n === 0) label = 'Выберите хотя бы один юнит';
+  else if (n === 1) label = '1 юнит → 10 слов';
+  else if (n === total && total > 1) label = 'Все юниты → 30 слов';
+  else label = n + ' юнита → 20 слов';
+  $('unitHint').textContent = label;
+}
+
+function refreshStudy() {
+  if (getAllWords().length === 0) {
+    $('studyEmpty').style.display = 'block';
+    $('studyContent').style.display = 'none';
+    return;
+  }
+  $('studyEmpty').style.display = 'none';
+  $('studyContent').style.display = 'block';
+  renderUnitList();
+  if (selectedUnits.size === 0 && units.length > 0) {
+    selectedUnits.add(units[0].name);
+    renderUnitList();
+  }
+  if (!testActive) {
+    $('resultScreen').style.display = 'none';
+    $('trainScreen').style.display = 'block';
+    resetTrainScreen();
+  }
+}
+
+function resetTrainScreen() {
+  current = null;
+  testWords = [];
+  currentIndex = 0;
+  correctCount = 0;
+  wrongCount = 0;
+  peekCount = 0;
+  answeredCorrectly = false;
+  testActive = false;
+  stopPeek();
+  $('cardWord').textContent = '—';
+  $('cardPrompt').textContent = 'Нажмите «Начать тест»';
+  $('cardAnswer').style.display = 'none';
+  $('answerInput').value = '';
+  $('answerInput').disabled = true;
+  $('answerInput').className = '';
+  $('feedback').textContent = '';
+  $('feedback').className = 'feedback';
+  $('currentNum').textContent = '0';
+  $('totalNum').textContent = '0';
+  $('progressFill').style.width = '0%';
+  $('checkBtn').disabled = true;
+  $('peekBtn').disabled = true;
+  updateStats();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function startTest() {
+  if (selectedUnits.size === 0) {
+    alert('Выберите хотя бы один юнит');
+    return;
+  }
+  let pool = [];
+  units.forEach(u => {
+    if (selectedUnits.has(u.name)) pool.push(...u.words);
+  });
+  if (pool.length === 0) {
+    alert('В выбранных юнитах нет слов');
+    return;
+  }
+  let testSize;
+  const n = selectedUnits.size;
+  const total = units.length;
+  if (n === 1) testSize = 10;
+  else if (n === total) testSize = 30;
+  else testSize = 20;
+  shuffle(pool);
+  testWords = pool.slice(0, Math.min(testSize, pool.length));
+  currentIndex = 0;
+  correctCount = 0;
+  wrongCount = 0;
+  peekCount = 0;
+  answeredCorrectly = false;
+  testActive = true;
+  $('resultScreen').style.display = 'none';
+  $('trainScreen').style.display = 'block';
+  updateStats();
+  nextCard();
+}
+
+function getMode() {
+  return document.querySelector('input[name="mode"]:checked').value;
+}
+
+function nextCard() {
+  if (currentIndex >= testWords.length) {
+    finishRound();
+    return;
+  }
+  answeredCorrectly = false;
+  stopPeek();
+  $('answerInput').disabled = false;
+  $('answerInput').value = '';
+  $('answerInput').className = '';
+  $('answerInput').focus();
+  $('feedback').textContent = 'Введите ответ и нажмите Enter';
+  $('feedback').className = 'feedback';
+  $('cardAnswer').style.display = 'none';
+  $('cardAnswer').textContent = '';
+  $('peekBtn').disabled = false;
+  $('checkBtn').disabled = false;
+  const word = testWords[currentIndex];
+  const mode = getMode();
+  let direction = mode;
+  if (mode === 'mix') direction = Math.random() < 0.5 ? 'en-ru' : 'ru-en';
+  current = { en: word.en, ru: word.ru, direction: direction };
+  if (direction === 'en-ru') {
+    $('cardWord').textContent = word.en;
+    $('cardPrompt').textContent = 'Введите перевод на русском';
+  } else {
+    $('cardWord').textContent = word.ru;
+    $('cardPrompt').textContent = 'Введите слово на английском';
+  }
+  $('currentNum').textContent = currentIndex + 1;
+  $('totalNum').textContent = testWords.length;
+  updateStats();
+}
+
+function normalize(s) {
+  return s.toLowerCase().replace(/ё/g, 'е').trim().replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ');
+}
+
+function checkAnswer() {
+  if (!current || answeredCorrectly) return;
+  const userAns = normalize($('answerInput').value);
+  if (!userAns) return;
+  const correctRaw = current.direction === 'en-ru' ? current.ru : current.en;
+  const variants = correctRaw.split(/[,/]/).map(normalize).filter(Boolean);
+  const isCorrect = variants.indexOf(userAns) !== -1;
+  if (isCorrect) {
+    if (!answeredCorrectly) {
+      correctCount++;
+      answeredCorrectly = true;
+    }
+    $('answerInput').disabled = true;
+    $('answerInput').classList.remove('wrong');
+    $('answerInput').classList.add('correct');
+    $('feedback').textContent = '✓ Верно! Нажмите Enter для следующего слова';
+    $('feedback').className = 'feedback ok';
+    $('peekBtn').disabled = true;
+    updateStats();
+  } else {
+    wrongCount++;
+    $('answerInput').classList.remove('correct');
+    $('answerInput').classList.add('wrong');
+    $('feedback').textContent = '✗ Неверно (−5%). Попробуйте ещё раз';
+    $('feedback').className = 'feedback no';
+    $('cardAnswer').style.display = 'none';
+    updateStats();
+    $('answerInput').focus();
+    $('answerInput').select();
+  }
+}
+
+function startPeek() {
+  if (!current || answeredCorrectly) return;
+  if (peekTimeout || peekInterval) return;
+  peekCount++;
+  updateStats();
+  const correctRaw = current.direction === 'en-ru' ? current.ru : current.en;
+  $('cardAnswer').textContent = correctRaw;
+  $('cardAnswer').style.display = 'block';
+  let secondsLeft = 5;
+  $('peekTimer').style.display = 'block';
+  $('peekTimer').textContent = secondsLeft;
+  $('feedback').textContent = '👀 Подсказка (−5%) — 5 секунд';
+  $('feedback').className = 'feedback hint';
+  $('peekBtn').disabled = true;
+  peekInterval = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft > 0) $('peekTimer').textContent = secondsLeft;
+  }, 1000);
+  peekTimeout = setTimeout(() => {
+    stopPeek();
+    if (!answeredCorrectly) {
+      $('cardAnswer').style.display = 'none';
+      $('feedback').textContent = 'Введите ответ и нажмите Enter';
+      $('feedback').className = 'feedback';
+      $('peekBtn').disabled = false;
+    }
+  }, 5000);
+}
+
+function stopPeek() {
+  if (peekTimeout) { clearTimeout(peekTimeout); peekTimeout = null; }
+  if (peekInterval) { clearInterval(peekInterval); peekInterval = null; }
+  $('peekTimer').style.display = 'none';
+  $('peekTimer').textContent = '5';
+}
+
+function finishRound() {
+  current = null;
+  stopPeek();
+  testActive = false;
+  $('trainScreen').style.display = 'none';
+  $('resultScreen').style.display = 'block';
+  const score = Math.max(0, 100 - wrongCount * PENALTY_PER_WRONG - peekCount * PENALTY_PER_PEEK);
+  $('resultScore').textContent = score + '%';
+  $('resultCorrect').textContent = correctCount;
+  $('resultWrong').textContent = wrongCount;
+  $('resultWords').textContent = testWords.length;
+  let emoji = '🎉', title = 'Отлично!';
+  if (score < 90) { emoji = '👍'; title = 'Хорошо!'; }
+  if (score < 70) { emoji = '🙂'; title = 'Неплохо!'; }
+  if (score < 50) { emoji = '😐'; title = 'Можно лучше'; }
+  if (score < 30) { emoji = '😕'; title = 'Попробуйте ещё раз'; }
+  if (score === 0) { emoji = '😢'; title = 'Нужно повторить слова'; }
+  $('resultEmoji').textContent = emoji;
+  $('resultTitle').textContent = title;
+}
+
+function updateStats() {
+  $('statTotal').textContent = testWords.length || 0;
+  $('statCorrect').textContent = correctCount;
+  $('statWrong').textContent = wrongCount;
+  const score = Math.max(0, 100 - wrongCount * PENALTY_PER_WRONG - peekCount * PENALTY_PER_PEEK);
+  $('statPercent').textContent = score + '%';
+  const done = currentIndex + (answeredCorrectly ? 1 : 0);
+  const pct = testWords.length > 0 ? (done / testWords.length) * 100 : 0;
+  $('progressFill').style.width = Math.min(100, pct) + '%';
+}
+
+$('startTestBtn').addEventListener('click', startTest);
+$('checkBtn').addEventListener('click', () => {
+  if (!testActive) return;
+  if (answeredCorrectly) { currentIndex++; nextCard(); }
+  else checkAnswer();
+});
+$('peekBtn').addEventListener('click', startPeek);
+$('restartBtn').addEventListener('click', () => { testActive = false; resetTrainScreen(); });
+$('retryBtn').addEventListener('click', () => {
+  $('resultScreen').style.display = 'none';
+  $('trainScreen').style.display = 'block';
+  resetTrainScreen();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (!$('panel-study').classList.contains('active')) return;
+  if (!testActive) return;
+  if (!current) return;
+  e.preventDefault();
+  if (answeredCorrectly) { currentIndex++; nextCard(); }
+  else checkAnswer();
+});
+
+$('saveBtn').addEventListener('click', () => {
+  const text = $('wordList').value;
+  const parsed = parseUnits(text);
+  if (parsed.length === 0) {
+    $('saveFeedback').textContent = 'Не найдено ни одной пары слов.';
+    $('saveFeedback').className = 'feedback no';
+    return;
+  }
+  units = parsed;
+  saveUnits();
+  $('saveFeedback').textContent = '✓ Сохранено юнитов: ' + units.length + ', слов: ' + getAllWords().length;
+  $('saveFeedback').className = 'feedback ok';
+  testActive = false;
+  current = null;
+  testWords = [];
+  selectedUnits.clear();
+  setTimeout(() => {
+    $('saveFeedback').textContent = '';
+    switchTab('study');
+  }, 900);
+});
+
+$('loadDemoBtn').addEventListener('click', () => {
+  const demo = [
+    '# Unit 1',
+    'green = зеленый',
+    'little = маленький',
+    'dance = танцевать',
+    'bad = плохой',
+    'boy = мальчик',
+    'clever = умный',
+    'dark = тёмный',
+    'funny = смешной',
+    'girl = девочка',
+    'good = хороший',
+    'kind = добрый',
+    'lazy = ленивый',
+    'long = длинный',
+    'nice = милый',
+    'short = короткий',
+    '',
+    '# Unit 2',
+    'Monday = понедельник',
+    'Tuesday = вторник',
+    'Wednesday = среда',
+    'Thursday = четверг',
+    'Friday = пятница',
+    'Saturday = суббота',
+    'Sunday = воскресенье',
+    'aunt = тётя',
+    'brother = брат',
+    'child = ребёнок',
+    'children = дети',
+    'cousin = двоюродный брат, двоюродная сестра',
+    'dad = папа',
+    'daughter = дочь',
+    'grandad = дедушка',
+    'granny = бабушка',
+    'mum = мама',
+    'parents = родители',
+    'sister = сестра',
+    'son = сын',
+    'uncle = дядя'
+  ].join('\n');
+  $('wordList').value = demo;
+});
+
+$('clearBtn').addEventListener('click', () => {
+  if (confirm('Очистить список слов?')) {
+    $('wordList').value = '';
+    units = [];
+    saveUnits();
+    testActive = false;
+    current = null;
+    testWords = [];
+    selectedUnits.clear();
+    refreshStudy();
+  }
+});
+
+$('exportBtn').addEventListener('click', () => {
+  if (getAllWords().length === 0) {
+    $('saveFeedback').textContent = 'Список пуст — нечего сохранять.';
+    $('saveFeedback').className = 'feedback no';
+    return;
+  }
+  const content = unitsToText();
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'english-words-' + new Date().toISOString().slice(0, 10) + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  $('saveFeedback').textContent = '✓ Файл сохранён (' + getAllWords().length + ' слов)';
+  $('saveFeedback').className = 'feedback ok';
+  setTimeout(() => { $('saveFeedback').textContent = ''; }, 2000);
+});
+
+$('importBtn').addEventListener('click', () => $('fileInput').click());
+
+$('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const text = ev.target.result;
+    $('wordList').value = text;
+    const parsed = parseUnits(text);
+    if (parsed.length > 0) {
+      $('saveFeedback').textContent = 'Загружено юнитов: ' + parsed.length + '. Нажмите «Сохранить».';
+      $('saveFeedback').className = 'feedback ok';
+    } else {
+      $('saveFeedback').textContent = 'Не удалось распознать слова в файле.';
+      $('saveFeedback').className = 'feedback no';
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+  e.target.value = '';
+});
+
+loadUnits();
+$('wordList').value = unitsToText();
+refreshStudy();
+</script>
+</body>
+</html>
